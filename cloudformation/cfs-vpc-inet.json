@@ -1,0 +1,44 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "Ml-Image-Enhancer - Setting up Elastic IP for future use by API Gateway",
+	"Parameters": {
+		"Environment": {
+			"Type": "String",
+			"Default": "nonprod",
+			"AllowedValues": ["nonprod",
+			"prod"],
+			"Description": "The environment switch parameter for this cf instance."
+		},
+		"Application": {
+			"Type": "String",
+			"Default": "imgenhancer",
+			"Description": "Logical group to tie all the resource instances as related to the instance of this cf stack."
+		}
+	},
+	"Resources": {
+		"appElasticIPA": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": {
+				"Domain": "vpc"
+			}
+		}
+	},
+	"Outputs": {
+		"ImageEnhancerElasticIP": {
+			"Description": "This is a single Elastic IP to be exposed to the outside.",
+			"Value": {
+				"Fn::GetAtt": ["appElasticIPA",
+				"AllocationId"]
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["",
+					[{
+						"Ref": "Application"
+					},
+					"-elastic-ip"]]
+				}
+			}
+		}
+	}
+}

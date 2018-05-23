@@ -1,0 +1,459 @@
+{
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "Ml-Image-Enhancer - Setting up base networking environment for the image enhancer VPC",
+	"Parameters": {
+		"Environment": {
+			"Type": "String",
+			"Default": "nonprod",
+			"AllowedValues": ["nonprod",
+			"prod"],
+			"Description": "The environment switch parameter for this cf instance."
+		},
+		"Application": {
+			"Type": "String",
+			"Default": "imgenhancer",
+			"Description": "Logical group to tie all the resource instances as related to the instance of this cf stack."
+		},
+		"PublicSubnetCIDR": {
+			"Type": "String",
+			"Default": "153.29.0.0/25",
+			"Description": "Specify the public subnet CIDR."
+		},
+		"PrivateSubnetCIDR": {
+			"Type": "String",
+			"Default": "153.29.0.128/25",
+			"Description": "Specify the private subnet CIDR."
+		},
+		"AvailabilityZone": {
+			"Type": "AWS::EC2::AvailabilityZone::Name",
+			"Default": "",
+			"Description": "Specify region's availability zone to deploy this stack to."
+		},
+		"NotificationEmail": {
+			"Type": "String",
+			"Default": "youremailaddress@tbd.com",
+			"Description": "Email address to deliver all the operating alerts to."
+		}
+	},
+	"Conditions": {
+		"CreateProdResources": {
+			"Fn::Equals": [{
+				"Ref": "Environment"
+			},
+			"prod"]
+		},
+		"CreateNonProdResources": {
+			"Fn::Equals": [{
+				"Ref": "Environment"
+			},
+			"nonprod"]
+		}
+	},
+	"Resources": {
+		"AppVPC": {
+			"Type": "AWS::EC2::VPC",
+			"Properties": {
+				"CidrBlock": "153.29.0.0/16",
+				"EnableDnsSupport": "true",
+				"EnableDnsHostnames": "false",
+				"InstanceTenancy": "default",
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-vpc"]]
+					}
+				}]
+			}
+		},
+		"AppInternetGateway": {
+			"Type": "AWS::EC2::InternetGateway",
+			"Properties": {
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-inet"]]
+					}
+				}]
+			}
+		},
+		"AttachInetGateway": {
+			"Type": "AWS::EC2::VPCGatewayAttachment",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"InternetGatewayId": {
+					"Ref": "AppInternetGateway"
+				}
+			}
+		},
+		"SubnetPublicA": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"CidrBlock": {
+					"Ref": "PublicSubnetCIDR"
+				},
+				"AvailabilityZone": {
+					"Ref": "AvailabilityZone"
+				},
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-subnet-public-A"]]
+					}
+				}]
+			}
+		},
+		"SubnetPrivateA": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"CidrBlock": {
+					"Ref": "PrivateSubnetCIDR"
+				},
+				"AvailabilityZone": {
+					"Ref": "AvailabilityZone"
+				},
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-subnet-private-A"]]
+					}
+				}]
+			}
+		},
+		"NATA": {
+			"Type": "AWS::EC2::NatGateway",
+			"Properties": {
+				"AllocationId": {
+					"Fn::ImportValue": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-elastic-ip"]]
+					}
+				},
+				"SubnetId": {
+					"Ref": "SubnetPublicA"
+				},
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-nat-A"]]
+					}
+				}]
+			}
+		},
+		"RouteSubnetPrivateA": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-route-private-A"]]
+					}
+				}]
+			}
+		},
+		"SubnetPrivateARouteTableAssociation": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "SubnetPrivateA"
+				},
+				"RouteTableId": {
+					"Ref": "RouteSubnetPrivateA"
+				}
+			}
+		},
+		"RouteSubnetPublicA": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "AppVPC"
+				},
+				"Tags": [{
+					"Key": "Environment",
+					"Value": {
+						"Ref": "Environment"
+					}
+				},
+				{
+					"Key": "Application",
+					"Value": {
+						"Ref": "Application"
+					}
+				},
+				{
+					"Key": "Name",
+					"Value": {
+						"Fn::Join": ["",
+						[{
+							"Ref": "Application"
+						},
+						"-",
+						{
+							"Ref": "Environment"
+						},
+						"-route-public-A"]]
+					}
+				}]
+			}
+		},
+		"SubnetPublicARouteTableAssociation": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "SubnetPublicA"
+				},
+				"RouteTableId": {
+					"Ref": "RouteSubnetPublicA"
+				}
+			}
+		},
+		"SubnetPublicARoute": {
+			"Type": "AWS::EC2::Route",
+			"Properties": {
+				"RouteTableId": {
+					"Ref": "RouteSubnetPublicA"
+				},
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"GatewayId": {
+					"Ref": "AppInternetGateway"
+				}
+			}
+		},
+		"SubnetPrivateARoute": {
+			"Type": "AWS::EC2::Route",
+			"DependsOn": "NATA",
+			"Properties": {
+				"RouteTableId": {
+					"Ref": "RouteSubnetPrivateA"
+				},
+				"DestinationCidrBlock": "0.0.0.0/0",
+				"NatGatewayId": {
+					"Ref": "NATA"
+				}
+			}
+		},
+		"S3Endpoint": {
+			"Type": "AWS::EC2::VPCEndpoint",
+			"Properties": {
+				"PolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Action": "*",
+						"Effect": "Allow",
+						"Resource": "*",
+						"Principal": "*"
+					}]
+				},
+				"RouteTableIds": [{
+					"Ref": "RouteSubnetPrivateA"
+				}],
+				"ServiceName": {
+					"Fn::Join": ["",
+					["com.amazonaws.",
+					{
+						"Ref": "AWS::Region"
+					},
+					".s3"]]
+				},
+				"VpcId": {
+					"Ref": "AppVPC"
+				}
+			}
+		}
+	},
+	"Outputs": {
+		"ImageEnhancerPrivateSubnet": {
+			"Description": "This is private subnet designated to run lambda, ec2 and other resources.",
+			"Value": {
+				"Ref": "SubnetPrivateA"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["",
+					[{
+						"Ref": "Application"
+					},
+					"-private-subnet"]]
+				}
+			}
+		},
+		"ImageEnhancerS3Endpoint": {
+			"Description": "This is s3 endpoint accessible from private subnet only.",
+			"Value": {
+				"Ref": "S3Endpoint"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["",
+					[{
+						"Ref": "Application"
+					},
+					"-s3-endpoint"]]
+				}
+			}
+		},
+		"ImageEnhancerVPC": {
+			"Description": "This is locked down VPC used by the private subnet.",
+			"Value": {
+				"Ref": "AppVPC"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["",
+					[{
+						"Ref": "Application"
+					},
+					"-vpc"]]
+				}
+			}
+		},		
+		"ImageEnhancerNotificationEmail": {
+			"Description": "This is an email used for all system alert and monitoring notifications.",
+			"Value": {
+				"Ref": "NotificationEmail"
+			},
+			"Export": {
+				"Name": {
+					"Fn::Join": ["",
+					[{
+						"Ref": "Application"
+					},
+					"-email-notification"]]
+				}
+			}
+		}
+	}
+}
