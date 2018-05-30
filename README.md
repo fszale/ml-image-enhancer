@@ -1,5 +1,5 @@
 # ml-image-enhancer
-This is the machine learning image enhancer to process fuzzy UFO images and produce sharpen versions using TensorFlow and discogan concepts (Python and AWS)
+This is the machine learning image enhancer to process blurry and fuzzy UFO images and produce sharpen versions using TensorFlow and discogan concepts (Python and AWS)
 
 Additional Video talks and discussions can be found at https://www.youtube.com/channel/UC_nYBw5eWF01Hg8ptni-g-g
 
